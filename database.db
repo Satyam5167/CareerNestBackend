@@ -1,0 +1,13 @@
+## USERS TABLE
+
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT,                    -- NULL if OAuth user
+    provider TEXT DEFAULT 'local',    -- local / google
+    oauth_id TEXT,                    -- Google ID (nullable)
+    profile_completed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
