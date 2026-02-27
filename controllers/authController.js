@@ -19,7 +19,11 @@ export const signup = async (req, res) => {
         );
 
         const user = newUserRes.rows[0];
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign(
+            { id: user.id, name: user.name, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
 
         res.status(201).json({
             message: 'User created successfully',
@@ -42,7 +46,11 @@ export const login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign(
+            { id: user.id, name: user.name, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
 
         res.json({
             message: 'Login successful',
@@ -56,7 +64,11 @@ export const login = async (req, res) => {
 
 export const googleAuthCallback = (req, res) => {
     // Passport adds the user to req.user after success
-    const token = jwt.sign({ id: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign(
+        { id: req.user.id, name: req.user.name, email: req.user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+    );
 
     // Redirect to frontend with token
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';

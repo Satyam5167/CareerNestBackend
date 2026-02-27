@@ -15,6 +15,7 @@ passport.use(new GoogleStrategy({
             const email = profile.emails[0].value;
             const oauthId = profile.id;
             const name = profile.displayName;
+            const profilePicture = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
 
             // Check if user exists
             const userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -23,18 +24,16 @@ passport.use(new GoogleStrategy({
             if (!user) {
                 // Create user if not exists
                 const newUserRes = await pool.query(
-                    'INSERT INTO users (name, email, provider, oauth_id) VALUES ($1, $2, $3, $4) RETURNING *',
-                    [name, email, 'google', oauthId]
+                    'INSERT INTO users (name, email, provider, oauth_id, profile_picture) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                    [name, email, 'google', oauthId, profilePicture]
                 );
                 user = newUserRes.rows[0];
             } else if (user.provider !== 'google') {
                 // Handle case where user registered with same email but different provider
-                // For simplicity, we could update provider or return error. 
-                // Let's allow linking if oauth_id is empty.
                 if (!user.oauth_id) {
                     const updatedUserRes = await pool.query(
-                        'UPDATE users SET provider = $1, oauth_id = $2 WHERE id = $3 RETURNING *',
-                        ['google', oauthId, user.id]
+                        'UPDATE users SET provider = $1, oauth_id = $2, profile_picture = $3 WHERE id = $4 RETURNING *',
+                        ['google', oauthId, profilePicture, user.id]
                     );
                     user = updatedUserRes.rows[0];
                 }
