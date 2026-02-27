@@ -1,24 +1,49 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import dotenv from 'dotenv';
+import pool from '../utils/db.js';
 
 dotenv.config();
 
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID || 'your_google_client_id',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'your_google_client_secret',
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: "/api/auth/google/callback"
 },
-    function (accessToken, refreshToken, profile, done) {
-        // Here you would typically find or create a user in your database
-        // For now, we'll just return the profile
-        const user = {
-            id: profile.id,
-            displayName: profile.displayName,
-            email: profile.emails[0].value,
-            photos: profile.photos[0].value
-        };
-        return done(null, user);
+    async function (accessToken, refreshToken, profile, done) {
+        try {
+            const email = profile.emails[0].value;
+            const oauthId = profile.id;
+            const name = profile.displayName;
+
+            // Check if user exists
+            const userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+            let user = userRes.rows[0];
+
+            if (!user) {
+                // Create user if not exists
+                const newUserRes = await pool.query(
+                    'INSERT INTO users (name, email, provider, oauth_id) VALUES ($1, $2, $3, $4) RETURNING *',
+                    [name, email, 'google', oauthId]
+                );
+                user = newUserRes.rows[0];
+            } else if (user.provider !== 'google') {
+                // Handle case where user registered with same email but different provider
+                // For simplicity, we could update provider or return error. 
+                // Let's allow linking if oauth_id is empty.
+                if (!user.oauth_id) {
+                    const updatedUserRes = await pool.query(
+                        'UPDATE users SET provider = $1, oauth_id = $2 WHERE id = $3 RETURNING *',
+                        ['google', oauthId, user.id]
+                    );
+                    user = updatedUserRes.rows[0];
+                }
+            }
+
+            return done(null, user);
+        } catch (error) {
+            return done(error, null);
+        }
     }
 ));
 
