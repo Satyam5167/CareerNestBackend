@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = [
     process.env.FRONTEND_URL,
     'http://localhost:5173',
-    'https://career-nest.onrender.com' // Potential Render URL
+    'https://careernestbackend-4jlj.onrender.com' // render url
 ].filter(Boolean);
 
 app.use(cors({
