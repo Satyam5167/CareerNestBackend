@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     target_roles TEXT[],
     preferred_locations TEXT[],
     is_remote BOOLEAN DEFAULT FALSE,
+    is_complete BOOLEAN DEFAULT FALSE,
     github_url TEXT,
     linkedin_url TEXT,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -50,11 +51,11 @@ CREATE TABLE IF NOT EXISTS profiles (
 
 -- 4. ATS Scores Table
 CREATE TABLE IF NOT EXISTS ats_scores (
-    id SERIAL PRIMARY KEY,
-    user_id VARCHAR(255), -- Can be 'anonymous' or UUID
-    resume_name VARCHAR(255),
-    score INTEGER,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    resume_name TEXT NOT NULL,
+    score INTEGER NOT NULL,
+    score_date TIMESTAMP DEFAULT NOW()
 );
 
 -- 5. Bookmarks Table

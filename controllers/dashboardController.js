@@ -50,6 +50,54 @@ export const getDashboardStats = async (req, res) => {
             [userId]
         );
 
+        // 7. Skill Gap Analysis
+        const profileRes = await pool.query(
+            'SELECT skills, target_roles, is_complete, full_name, university FROM profiles WHERE user_id = $1',
+            [userId]
+        );
+
+        let skillGap = [];
+        let profileComplete = false;
+
+        if (profileRes.rows.length > 0) {
+            const profile = profileRes.rows[0];
+            // If they have skills, we consider it "complete enough" for the dashboard
+            profileComplete = profile.is_complete || (profile.skills && profile.skills.length > 0);
+
+            const userSkills = (profile.skills || []).map(s => s.toLowerCase());
+            const targetRoles = profile.target_roles || ['Software Engineer'];
+
+            const ROLE_SKILLS = {
+                'Software Engineer': ['React', 'Node.js', 'PostgreSQL', 'Docker', 'AWS', 'System Design'],
+                'Frontend Developer': ['React', 'TypeScript', 'Tailwind CSS', 'Redux', 'Unit Testing'],
+                'Backend Developer': ['Node.js', 'Python', 'Go', 'Microservices', 'Redis', 'Kubernetes'],
+                'Data Scientist': ['Python', 'SQL', 'Machine Learning', 'Pandas', 'Spark', 'Tableau'],
+                'Full Stack Developer': ['React', 'Node.js', 'PostgreSQL', 'Docker', 'AWS', 'Redis']
+            };
+
+            skillGap = targetRoles.map(role => {
+                const required = ROLE_SKILLS[role] || ROLE_SKILLS['Software Engineer'];
+                const missing = required.filter(s => !userSkills.includes(s.toLowerCase()));
+                const matchPercent = Math.round(((required.length - missing.length) / required.length) * 100);
+
+                return {
+                    role,
+                    missing: missing.slice(0, 3), // Show top 3 missing
+                    matchPercent,
+                    totalMissing: missing.length
+                };
+            });
+        } else {
+            // Default if no profile
+            skillGap = [{
+                role: 'Software Engineer',
+                missing: ['React', 'Node.js', 'Docker'],
+                matchPercent: 0,
+                totalMissing: 6
+            }];
+            profileComplete = false;
+        }
+
         res.json({
             stats: {
                 bookmarks: bookmarksCount,
@@ -66,7 +114,9 @@ export const getDashboardStats = async (req, res) => {
                 { name: 'Fri', applications: 0 },
                 { name: 'Sat', applications: 0 },
                 { name: 'Sun', applications: 0 },
-            ]
+            ],
+            skillGap,
+            isComplete: profileComplete
         });
 
     } catch (error) {

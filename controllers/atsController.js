@@ -106,7 +106,10 @@ export const analyzeResume = async (req, res) => {
             return res.status(400).json({ message: 'Resume PDF and Job Description are required' });
         }
 
-        const userId = req.user?.id || 'anonymous';
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ message: 'User must be logged in to save ATS results' });
+        }
+        const userId = req.user.id;
         const jdText = req.body.jd;
         console.log(`[ATS] Analyzing resume: ${req.file.originalname} (Size: ${req.file.size} bytes) for user: ${userId}`);
 
