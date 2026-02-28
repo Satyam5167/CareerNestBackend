@@ -13,7 +13,9 @@ import atsRoutes from './routes/atsRoutes.js';
 import { initCronJobs } from './cron.js';
 import pool from './utils/db.js';
 const app = express();
+app.set('trust proxy', 1); // Trust the first proxy (Render)
 const PORT = process.env.PORT || 5000;
+
 
 // Middleware
 const allowedOrigins = [
