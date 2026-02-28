@@ -78,6 +78,13 @@ export const googleAuthCallback = (req, res) => {
     );
 
     // Redirect to frontend with token
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+    // Remove trailing slash if present to avoid double slashes in redirect
+    if (frontendUrl.endsWith('/')) {
+        frontendUrl = frontendUrl.slice(0, -1);
+    }
+
     res.redirect(`${frontendUrl}/login-success?token=${token}`);
 };
+
