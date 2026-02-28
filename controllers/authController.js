@@ -5,6 +5,8 @@ import pool from '../utils/db.js';
 export const signup = async (req, res) => {
     try {
         const { name, email, password } = req.body;
+        console.log(`[Signup] Attempt for: ${email}`);
+
 
         // Check if user already exists
         const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -38,13 +40,18 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log(`[Login] Attempt for: ${email}`);
+
 
         const userRes = await pool.query('SELECT * FROM users WHERE email = $1 AND provider = $2', [email, 'local']);
         const user = userRes.rows[0];
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
+            console.log(`[Login] FAILED: Invalid credentials for ${email}`);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
+        console.log(`[Login] SUCCESS: User found, generating token for ${email}`);
+
 
         const token = jwt.sign(
             { id: user.id, name: user.name, email: user.email },

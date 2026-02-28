@@ -1,6 +1,4 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const pdf = require('pdf-parse');
+import { PDFParse } from 'pdf-parse';
 import pool from '../utils/db.js';
 
 // ─── Common tech keywords / skills dictionary ──────────────────
@@ -104,23 +102,36 @@ function isKeywordInResume(keyword, resumeText) {
 export const analyzeResume = async (req, res) => {
     try {
         if (!req.file || !req.body.jd) {
+            console.log('[ATS] Missing file or JD');
             return res.status(400).json({ message: 'Resume PDF and Job Description are required' });
         }
 
-        const userId = req.user.id;
+        const userId = req.user?.id || 'anonymous';
         const jdText = req.body.jd;
+        console.log(`[ATS] Analyzing resume: ${req.file.originalname} (Size: ${req.file.size} bytes) for user: ${userId}`);
 
         // Parse PDF
-        const pdfData = await pdf(req.file.buffer);
-        const resumeText = pdfData.text;
+        let resumeText = '';
+        try {
+            console.log('[ATS] Starting PDFParse...');
+            // In this specific version (2.4.5), PDFParse is a class
+            const parser = new PDFParse(req.file.buffer);
+            resumeText = await parser.getText();
+            console.log(`[ATS] PDF parse complete. Text Length: ${resumeText?.length}`);
+        } catch (pdfErr) {
+            console.error('[ATS] PDFParse Critical Error:', pdfErr);
+            return res.status(400).json({ message: 'Error processing PDF file. Please try a different PDF version.' });
+        }
 
-        if (!resumeText || resumeText.length < 50) {
-            return res.status(400).json({ message: 'Could not extract text from PDF. Ensure it is text-based.' });
+        if (!resumeText || resumeText.trim().length < 50) {
+            console.log('[ATS] Extracted text too short or empty. Sample:', resumeText.substring(0, 50));
+            return res.status(400).json({ message: 'Could not extract enough text from PDF. Ensure it is text-based (not a scanned image).' });
         }
 
         // Extract Keywords from JD
         const jdKeywords = extractKeywordsFromJD(jdText);
         if (jdKeywords.length === 0) {
+            console.log('[ATS] No keywords found in JD');
             return res.status(400).json({ message: 'No recognizable tech keywords found in Job Description.' });
         }
 
@@ -136,12 +147,18 @@ export const analyzeResume = async (req, res) => {
         }
 
         const score = Math.round((matched.length / jdKeywords.length) * 100);
+        console.log(`[ATS] Score: ${score}% (Matched: ${matched.length}/${jdKeywords.length})`);
 
         // Save Score
-        await pool.query(
-            'INSERT INTO ats_scores (user_id, resume_name, score) VALUES ($1, $2, $3)',
-            [userId, req.file.originalname, score]
-        );
+        try {
+            await pool.query(
+                'INSERT INTO ats_scores (user_id, resume_name, score) VALUES ($1, $2, $3)',
+                [userId, req.file.originalname, score]
+            );
+        } catch (dbErr) {
+            console.error('[ATS] Database Insert Error:', dbErr.message);
+            throw dbErr; // Re-throw to be caught by main catch
+        }
 
         res.json({
             score,
@@ -151,7 +168,31 @@ export const analyzeResume = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('ATS Controller Error:', err.message);
+        console.error('ATS Controller Main Error:', err.stack || err.message);
         res.status(500).json({ message: 'Server error during analysis' });
+    }
+};
+
+// ─── Simple Save Result Endpoint (for client-side parsed results) ──
+export const saveResult = async (req, res) => {
+    try {
+        const { score, resumeName } = req.body;
+        const userId = req.user.id;
+
+        if (score === undefined || !resumeName) {
+            return res.status(400).json({ message: 'Score and Resume Name are required' });
+        }
+
+        console.log(`[ATS] Saving client-side result: ${score}% for ${resumeName} (User: ${userId})`);
+
+        await pool.query(
+            'INSERT INTO ats_scores (user_id, resume_name, score) VALUES ($1, $2, $3)',
+            [userId, resumeName, score]
+        );
+
+        res.json({ message: 'Result saved successfully' });
+    } catch (err) {
+        console.error('[ATS] Error saving result:', err.message);
+        res.status(500).json({ message: 'Failed to save analysis result' });
     }
 };

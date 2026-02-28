@@ -1,7 +1,7 @@
 import express from 'express';
 export const router = express.Router();
 import multer from 'multer';
-import { analyzeResume } from '../controllers/atsController.js';
+import { analyzeResume, saveResult } from '../controllers/atsController.js';
 import passport from 'passport';
 
 const authMiddleware = passport.authenticate('jwt', { session: false });
@@ -21,5 +21,6 @@ const upload = multer({
 });
 
 router.post('/analyze', authMiddleware, upload.single('resume'), analyzeResume);
+router.post('/save-result', authMiddleware, saveResult);
 
 export default router;
