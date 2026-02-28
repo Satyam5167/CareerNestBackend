@@ -11,7 +11,7 @@ import bookmarkRoutes from './routes/bookmarkRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import atsRoutes from './routes/atsRoutes.js';
 import { initCronJobs } from './cron.js';
-
+import pool from './utils/db.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
