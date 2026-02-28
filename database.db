@@ -34,3 +34,55 @@ CREATE TABLE profiles (
 
     updated_at TIMESTAMP DEFAULT NOW()
 );
+
+
+## JOBs TABLE
+
+CREATE TABLE jobs (
+    id UUID PRIMARY KEY,
+    external_id TEXT UNIQUE NOT NULL,
+    title TEXT,
+    company TEXT,
+    location TEXT,
+    job_type TEXT,
+    work_mode TEXT,
+    salary_min NUMERIC,
+    salary_max NUMERIC,
+    description TEXT,
+    apply_link TEXT,
+    posted_at TIMESTAMP,
+    fetched_at TIMESTAMP DEFAULT NOW(),
+    is_active BOOLEAN DEFAULT TRUE,
+    source TEXT DEFAULT 'jsearch'
+);
+
+##bookmarks
+
+CREATE TABLE job_bookmarks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id, job_id)
+);
+
+## APPLICATIONS TABLE
+
+CREATE TABLE job_applications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    status TEXT DEFAULT 'Applied', -- Applied, Interviewing, Offer, Rejected
+    applied_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id, job_id)
+);
+
+## ATS SCORES TABLE
+
+CREATE TABLE ats_scores (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    resume_name TEXT NOT NULL,
+    score INTEGER NOT NULL,
+    score_date TIMESTAMP DEFAULT NOW()
+);

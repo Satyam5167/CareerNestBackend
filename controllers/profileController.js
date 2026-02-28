@@ -33,6 +33,7 @@ export const updateProfile = async (req, res) => {
             cgpa,
             graduation_year,
             phone,
+            skills,
             target_roles,
             preferred_locations,
             is_remote,
@@ -43,9 +44,9 @@ export const updateProfile = async (req, res) => {
         const result = await pool.query(
             `INSERT INTO profiles (
                 user_id, full_name, university, cgpa, graduation_year, phone, 
-                target_roles, preferred_locations, is_remote, github_url, linkedin_url, updated_at
+                skills, target_roles, preferred_locations, is_remote, github_url, linkedin_url, updated_at
             ) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
             ON CONFLICT (user_id) 
             DO UPDATE SET 
                 full_name = EXCLUDED.full_name,
@@ -53,6 +54,7 @@ export const updateProfile = async (req, res) => {
                 cgpa = EXCLUDED.cgpa,
                 graduation_year = EXCLUDED.graduation_year,
                 phone = EXCLUDED.phone,
+                skills = EXCLUDED.skills,
                 target_roles = EXCLUDED.target_roles,
                 preferred_locations = EXCLUDED.preferred_locations,
                 is_remote = EXCLUDED.is_remote,
@@ -62,7 +64,7 @@ export const updateProfile = async (req, res) => {
             RETURNING *`,
             [
                 userId, full_name, university, cgpa, graduation_year, phone,
-                target_roles, preferred_locations, is_remote, github_url, linkedin_url
+                skills, target_roles, preferred_locations, is_remote, github_url, linkedin_url
             ]
         );
 

@@ -1,5 +1,6 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as JWTStrategy, ExtractJwt } from 'passport-jwt';
 import dotenv from 'dotenv';
 import pool from '../utils/db.js';
 
@@ -45,6 +46,27 @@ passport.use(new GoogleStrategy({
         }
     }
 ));
+
+// JWT Strategy
+const jwtOptions = {
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: process.env.JWT_SECRET || 'your_secret_key'
+};
+
+passport.use(new JWTStrategy(jwtOptions, async (jwtPayload, done) => {
+    try {
+        const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [jwtPayload.id]);
+        const user = userRes.rows[0];
+
+        if (user) {
+            return done(null, user);
+        } else {
+            return done(null, false);
+        }
+    } catch (error) {
+        return done(error, false);
+    }
+}));
 
 passport.serializeUser((user, done) => {
     done(null, user);

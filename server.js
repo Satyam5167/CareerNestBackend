@@ -6,6 +6,11 @@ import passport from './config/passport.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
+import jobRoutes from './routes/jobRoutes.js';
+import bookmarkRoutes from './routes/bookmarkRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
+import atsRoutes from './routes/atsRoutes.js';
+import { initCronJobs } from './cron.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +30,10 @@ app.use(passport.session());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/profiles', profileRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/bookmarks', bookmarkRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/ats', atsRoutes);
 
 app.get('/', (req, res) => {
     res.send('Auth API is Running');
@@ -33,4 +42,5 @@ app.get('/', (req, res) => {
 // Start Server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+    initCronJobs();
 });
